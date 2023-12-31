@@ -163,20 +163,9 @@ function init_ui() {
     document.body.appendChild( menubar );
 
     add_button(menubar, "Next",() => {
-        if (cursor === 3) {
-            if (tree.length !== vertices.length - 1)
-                return
-            let es = new Set();
-            tree.forEach(e => {
-                es.add(e.v_1);
-                es.add(e.v_2);
-            });
-            if (vertices.length !== es.size || !sink)
-                return
-        }
-        cursor += 1;
-        window.removeEventListener('mousedown', onMouseDown);
-        modals[cursor + 1].classList.add("open");
+        gen = subsets(Array.from({length: vertex_count}, (_, i) => i + 1))
+        total_frames = 10000;
+        animateCuts()
     });
 }
 

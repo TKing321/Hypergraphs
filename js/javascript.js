@@ -58,6 +58,18 @@ function cart2pol(x, y) {
     return [r, phi]
 }
 
+function* subsets(array, offset = 1) {
+    while (offset < array.length) {
+        let first = array[offset++];
+        for (let subset of subsets(array, offset)) {
+            if(subset.indexOf(sink_vertex) === -1) {
+                subset.push(first);
+                yield subset;
+            }
+        }
+    }
+    yield [];
+}
 
 class Edge {
     constructor(v_1, v_2, mesh) {
@@ -89,6 +101,8 @@ let sink_vertex;
 let edge_count;
 let vertex_count;
 
+let cuts_animation;
+
 function init_var() {
     vertices = [];
     hyperedges = [];
@@ -103,9 +117,10 @@ function init_var() {
     chips = [];
     t = 0;
     edge_count = 1;
+    cuts_animation = [];
 }
 
-const f_per_op = 30;
+const f_per_op = 360;
 let t;
 let firings;
 let total_operations;
@@ -223,6 +238,12 @@ function parse_edges() {
     }
 }
 
+let checkSubset = (parentArray, subsetArray) => {
+    return subsetArray.every((el) => {
+        return parentArray.includes(el)
+    })
+}
+
 function display() {
     let height = window.innerHeight;
     let width = window.innerWidth;
@@ -232,8 +253,8 @@ function display() {
 
     for (let i = 0; i < vertex_count; i++) {
 
-        mouse.x = 2 / 3 - .5;
-        mouse.y = (i + 1) / (vertex_count + 1) - .5;
+        mouse.x = 4 / 3 - 1;
+        mouse.y = -2 * (i + 1) / (vertex_count + 1) + 1;
 
         planeNormal.copy(camera.position).normalize();
         plane.setFromNormalAndCoplanarPoint(planeNormal, scene.position);
@@ -250,8 +271,8 @@ function display() {
     }
 
     for (let i = 0; i < edge_count; i++) {
-        mouse.x = 1 / 3 - .5;
-        mouse.y = (i + 1) / (edge_count + 1) - .5;
+        mouse.x = 2 / 3 - 1;
+        mouse.y = -2 * (i + 1) / (edge_count + 1) + 1;
 
         planeNormal.copy(camera.position).normalize();
         plane.setFromNormalAndCoplanarPoint(planeNormal, scene.position);
@@ -288,6 +309,134 @@ function createEdge(vertex, hyperedge) {
     mesh.raycast = MeshLineRaycast;
     scene.add(mesh);
     edges.push(new Edge(vertex, hyperedge, mesh));
+}
+
+/**
+ * @param {Array<number>} subset
+ * @param {Array<Array<number>>}groups
+ * @param {Map<number, Array<number>>} edges
+ */
+let subset, groups, inclusions, gen;
+function animateCuts() {
+
+    if (t < total_frames-1) {
+        requestAnimationFrame(animateCuts);
+    }
+    else {
+        setTimeout(() => {
+
+        }, 5000);
+    }
+    let frame = t % f_per_op
+    // If the frame is 0, we need to update the groups and inclusions
+    if (frame === 0) {
+        // Clear the old drawing
+        subset = gen.next().value;
+        console.log(subset)
+
+        if (subset === undefined || subset.length === 0)
+            return;
+
+        subset.sort();
+
+        groups = []
+
+        let group = [subset[0]]
+        for (let i = 1; i < subset.length; i++) {
+            if (group[i-1] + 1 === subset[i]) {
+                group.push(subset[i]);
+            }
+            else {
+                groups.push(group);
+                group = [subset[i]]
+            }
+        }
+        groups.push(group)
+
+        inclusions = new Map();
+
+        let contained = [];
+
+        edges_blocks.forEach((edge) => {
+            if(checkSubset(subset, edge))
+                contained.push(edge);
+
+        })
+
+        subset.forEach((vertex) => {
+            let included = []
+            contained.forEach(edge =>{
+                if (edge.indexOf(vertex) !== -1)
+                    included.push(edge);
+            });
+            inclusions.set(vertex, included);
+        });
+
+        console.log("Subset", subset, "Groups", groups, "Inclusions", inclusions);
+    }
+
+    // Clear the old drawings
+    cuts_animation.forEach(id => {
+        removeObject3D(id);
+    });
+
+    cuts_animation = []
+
+    groups.forEach(group => {
+        const path = new THREE.Path();
+
+        // This will just be a circle around the vertex
+        if (group.length === 1 && (inclusions.get(group[0]) === undefined || inclusions.get(group[0]).length === 0)) {
+            let center = vertices[group[0] - 1].center;
+            path.absarc(center.x, center.y, 1, 0, 2 * Math.PI * frame / f_per_op);
+        }
+        else if (group.every((i) => {return inclusions.get(group[i]) === undefined || inclusions.get(group[i]).length === 0})) {
+            let [x1, x2, x3] = vertices[group[group.length - 1] - 1].center;
+            let [y1, y2, y3] = vertices[group[0] - 1].center;
+
+            path.absellipse((x1 + y1) / 2, (x2 + y2) / 2, 3, 1 + (y2 - x2) / 2, 0, 2 * Math.PI * frame / f_per_op)
+        }
+        else {
+            // TODO: Replace this with code that makes it contain
+
+            let [x1, x2, x3] = vertices[group[group.length - 1] - 1].center;
+            let [y1, y2, y3] = vertices[group[0] - 1].center;
+
+            path.absellipse((x1 + y1) / 2, (x2 + y2) / 2, group.length, 1 + (y2 - x2) / 2, 0, 2 * Math.PI * frame / f_per_op)
+        }
+
+        const points = path.getPoints();
+        const geometry = new THREE.BufferGeometry().setFromPoints( points );
+        const material = new THREE.LineBasicMaterial( { color: 0xffffff } );
+
+        const line = new THREE.Line( geometry, material );
+        scene.add( line );
+        cuts_animation.push(line.uuid)
+    });
+
+    renderer.render(scene, camera);
+    t += 1
+}
+
+function removeObject3D(id) {
+    let object3D = scene.getObjectByProperty("uuid", id);
+
+    if (!(object3D instanceof THREE.Object3D)) return false;
+
+    // for better memory management and performance
+    if (object3D.geometry) object3D.geometry.dispose();
+
+    if (object3D.material) {
+        if (object3D.material instanceof Array) {
+            // for better memory management and performance
+            object3D.material.forEach(material => material.dispose());
+        } else {
+            // for better memory management and performance
+            object3D.material.dispose();
+        }
+    }
+    object3D.removeFromParent(); // the parent might be the scene or another Object3D, but it is sure to be removed this way
+    return true;
 }
 
 Object.keys(closeBtns).forEach((i) => {
