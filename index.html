@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="rotor.css"/>
+    <link rel="stylesheet" href="sliders.css"/>
+    <script src="js/user_interface.js"></script>
+</head>
+<body>
+
+<div class="modal" id="modal">
+    <div class="modal-inner">
+        <h2>Welcome</h2>
+        <p>
+            This is an interactive demo of the hypergraph firing. Follow the prompts to build a hypergraph and examine our work.
+        </p>
+        <button id="closeModal">Continue</button>
+    </div>
+</div>
+
+<div class="modal" id="modal2">
+    <div class="modal-inner">
+        <h2>Vertices</h2>
+        <label for="vertices">How many vertices would you like to have?
+        </label>
+        <div class="form-group mx-2 mb-3">
+            <input type="number" class="form-control" id="vertices" name="vertices" required="" min="3">
+            <span class="validity"></span>
+        </div>
+        <button id="closeModal2">Continue</button>
+    </div>
+</div>
+
+<div class="modal" id="modal3">
+    <div class="modal-inner">
+        <h2>Hyperedges</h2>
+        <p>
+            Add hyperedges to your vertices
+        </p>
+        <table id="edges">
+            <tr>
+                <th>Hyperedge</th>
+            </tr>
+            <tr>
+                <td><input type="number" name="edge0" id="edge0" required="" /><span class="validity"></span></td>
+            </tr>
+        </table>
+        <button id="closeModal3">Continue</button> <button id="addRow" onclick="addRow('edges');">Add Edge</button>
+    </div>
+</div>
+
+<div class="modal" id="modal4">
+    <div class="modal-inner">
+        <h2>Temp</h2>
+        <p>
+            Temp Scene with button
+        </p>
+        <button id="closeModal4">Display</button>
+    </div>
+</div>
+<script src="lib/three.js"></script>
+<script src="lib/THREE.MeshLine.js"></script>
+<script src="js/ArrowCustom.js"></script>
+<script src="js/javascript.js"></script>
+<script src="js/user_interface.js"></script>
+
+</body>
+</html>
