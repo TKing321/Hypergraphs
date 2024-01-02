@@ -287,16 +287,17 @@ function display() {
         let center = getCenterPoint(sphereMesh);
         hyperedges.push(new Vertex(mouse.x, mouse.y, sphereMesh, center))
         let edge = edges_blocks[i];
+        let color = hslToNum((i * 149) % 360, 0.59, 0.7);
         for (let j = 0; j < edge.length; j++) {
-            createEdge(vertices[edge[j]-1], hyperedges[i])
+            createEdge(vertices[edge[j]-1], hyperedges[i], color)
         }
     }
     renderer.render(scene, camera);
 }
 
-function createEdge(vertex, hyperedge) {
+function createEdge(vertex, hyperedge, color) {
     const material = new MeshLineMaterial({
-        color:0x808080,
+        color,
         linewidth: 1,
         // dashArray: 0.2,
         // dashRatio: 0.3,
@@ -311,15 +312,40 @@ function createEdge(vertex, hyperedge) {
     edges.push(new Edge(vertex, hyperedge, mesh));
 }
 
+function hslToNum(h, s, l) {
+    let c = (1 - Math.abs(2 * l - 1)) * s;
+    let x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    let m = l - c / 2;
+    let a = Math.floor(h / 60);
+    let r = 0;
+    let g = 0;
+    let b = 0;
+
+    switch(a) {
+        case 0: r = c; g = x; break;
+        case 1: r = x; g = c; break;
+        case 2: g = c; b = x; break;
+        case 3: g = x; b = c; break;
+        case 4: r = x; b = c; break;
+        case 5: r = c; b = x; break;
+        default: break;
+    }
+
+    r = Math.round((r+m)*0xff);
+    g = Math.round((g+m)*0xff);
+    b = Math.round((b+m)*0xff);
+    return (r * 0x10000 + g * 0x100 + b);
+}
+
 /**
  * @param {Array<number>} subset
  * @param {Array<Array<number>>}groups
  * @param {Map<number, Array<number>>} edges
  */
-let subset, groups, inclusions, gen;
+let subset, groups, inclusions, gen, running = true;
 function animateCuts() {
 
-    if (t < total_frames-1) {
+    if (t < total_frames-1 && running) {
         requestAnimationFrame(animateCuts);
     }
     else {
@@ -334,8 +360,10 @@ function animateCuts() {
         subset = gen.next().value;
         console.log(subset)
 
-        if (subset === undefined || subset.length === 0)
+        if (subset === undefined || subset.length === 0) {
+            running = false
             return;
+        }
 
         subset.sort();
 
@@ -397,7 +425,7 @@ function animateCuts() {
             path.absellipse((x1 + y1) / 2, (x2 + y2) / 2, 3, 1 + (y2 - x2) / 2, 0, 2 * Math.PI * frame / f_per_op)
         }
         else {
-            // TODO: Replace this with code that makes it contain
+            // TODO: Replace this with code that makes it contain the hyperedge node
 
             let [x1, x2, x3] = vertices[group[group.length - 1] - 1].center;
             let [y1, y2, y3] = vertices[group[0] - 1].center;
