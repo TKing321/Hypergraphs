@@ -342,10 +342,10 @@ function hslToNum(h, s, l) {
  * @param {Array<Array<number>>}groups
  * @param {Map<number, Array<number>>} edges
  */
-let subset, groups, inclusions, gen;
+let subset, groups, inclusions, gen, running = true;
 function animateCuts() {
 
-    if (t < total_frames-1) {
+    if (t < total_frames-1 && running) {
         requestAnimationFrame(animateCuts);
     }
     else {
@@ -360,8 +360,10 @@ function animateCuts() {
         subset = gen.next().value;
         console.log(subset)
 
-        if (subset === undefined || subset.length === 0)
+        if (subset === undefined || subset.length === 0) {
+            running = false
             return;
+        }
 
         subset.sort();
 
@@ -423,7 +425,7 @@ function animateCuts() {
             path.absellipse((x1 + y1) / 2, (x2 + y2) / 2, 3, 1 + (y2 - x2) / 2, 0, 2 * Math.PI * frame / f_per_op)
         }
         else {
-            // TODO: Replace this with code that makes it contain
+            // TODO: Replace this with code that makes it contain the hyperedge node
 
             let [x1, x2, x3] = vertices[group[group.length - 1] - 1].center;
             let [y1, y2, y3] = vertices[group[0] - 1].center;
